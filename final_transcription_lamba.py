@@ -5,8 +5,8 @@ import json
 
 transcribe_client = boto3.client('transcribe')
 lambda_client = boto3.client('lambda')
-s3_client = boto3.client('s3', aws_access_key_id='AKIAQMMIZFZP2P42UUS5',
-                         aws_secret_access_key='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')
+s3_client = boto3.client('s3', aws_access_key_id='*',
+                         aws_secret_access_key='*')
 
 
 def lambda_handler(event, context):

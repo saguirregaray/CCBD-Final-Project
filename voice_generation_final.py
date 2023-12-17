@@ -4,8 +4,8 @@ import json
 s3 = boto3.client('s3')
 client_method = 'get_object'
 sns = boto3.client('sns')
-dynamodb = boto3.resource('dynamodb', aws_access_key_id='AKIAQMMIZFZP2P42UUS5',
-                          aws_secret_access_key='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')
+dynamodb = boto3.resource('dynamodb', aws_access_key_id='*',
+                          aws_secret_access_key='*')
 table = dynamodb.Table('audio_translation_user')
 polly = boto3.client('polly')
 
