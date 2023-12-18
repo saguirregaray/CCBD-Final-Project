@@ -1,5 +1,4 @@
 import boto3
-import json
 
 s3 = boto3.client('s3')
 client_method = 'get_object'
@@ -14,10 +13,19 @@ def get_presigned_url(output_bucket, output_audio_key):
     method_parameters = {"Bucket": output_bucket, "Key": output_audio_key}
 
     url = s3.generate_presigned_url(
-        ClientMethod=client_method, Params=method_parameters, ExpiresIn=60 * 60 * 24 * 7
+        ClientMethod='get_object', Params=method_parameters, ExpiresIn=60 * 60 * 24 * 7
     )
-    print("Got presigned URL: %s", url)
+    print("Got presigned URL:", url)
     return url
+
+
+def get_user_email(record_user_key):
+    table = dynamodb.Table('audio_translation_user')
+    response = table.get_item(Key={'username': record_user_key})
+    item = response.get('Item')
+    if item:
+        return item.get('email')
+    return None
 
 
 def lambda_handler(event, context):
@@ -34,6 +42,7 @@ def lambda_handler(event, context):
     translated_text = response['Body'].read().decode('utf-8')
 
     # Generate an output speech from the translated text using Amazon Polly
+    polly = boto3.client('polly')
     response = polly.synthesize_speech(
         Text=translated_text,
         OutputFormat='mp3',
@@ -61,14 +70,26 @@ def lambda_handler(event, context):
                                                                                          output_audio_key)
     table.put_item(Item=current_data)
 
-    # Send notification to the frontend using SNS (mocking SNS call)
-    sns_topic_arn = 'arn:aws:sns:us-east-1:303030779271:FrontEndNotification.fifo'
-    message = f"Custom voice audio generated for {db_audio_key}."
+    print(current_data)
 
+    # Retrieve user email from DynamoDB
+    user_email = get_user_email(record_user_key)
+    print(user_email)
+
+    # Send notification to the user's email using SNS
+    db_audio_key = 'test'
+    sns_topic_arn = 'arn:aws:sns:us-east-1:303030779271:EmailNotification'
+    email_message = f"Custom voice audio generated for {db_audio_key}."
     sns.publish(
         TopicArn=sns_topic_arn,
-        Message=message,
-        MessageGroupId='FinalTranslation'
+        Message=email_message,
+        Subject='Custom Voice Audio Notification',
+        MessageAttributes={
+            'email': {
+                'DataType': 'String',
+                'StringValue': user_email
+            }
+        }
     )
 
     return {
